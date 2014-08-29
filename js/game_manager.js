@@ -4,18 +4,22 @@ function GameManager(size, InputManager, Actuator, StorageManager) {
   this.storageManager = new StorageManager;
   this.actuator       = new Actuator;
 
-  this.startTiles     = 2;
+  this.startTiles     = 15;
+
+  this.bestscore = {moves:0,value:0}
 
   this.inputManager.on("move", this.move.bind(this));
   this.inputManager.on("restart", this.restart.bind(this));
   this.inputManager.on("keepPlaying", this.keepPlaying.bind(this));
+
+
 
   this.setup();
 }
 
 // Restart the game
 GameManager.prototype.restart = function () {
-  this.storageManager.clearGameState();
+  
   this.actuator.continueGame(); // Clear the game won/lost message
   this.setup();
 };
@@ -54,21 +58,49 @@ GameManager.prototype.setup = function () {
     this.addStartTiles();
   }
 
+
   // Update the actuator
   this.actuate();
 };
 
 // Set up the initial tiles to start the game with
 GameManager.prototype.addStartTiles = function () {
-  for (var i = 0; i < this.startTiles; i++) {
-    this.addRandomTile();
+var newlist = new Array(15);
+for (var i=0;i<15;i++)
+    newlist[i]= ((i+7)%15 + 1);
+
+
+console.log('addStartTiles');
+/*
+    for (var i=0;i<15;i++) {
+	var swpind= i + (Math.floor((Math.random()*(15-i))))%(15-i+1);
+	var x = newlist[swpind];
+	newlist[swpind] =newlist[0];
+        newlist[0] = x ;
+	//console.log(swpind);    
+    }
+  */
+    this.addtilelist(newlist);
+/*
+for(var i=0;i<newlist.length;i++)
+	console.log(newlist[i])
+*/
+  
+};
+
+GameManager.prototype.addtilelist = function(list) {
+for (var i=0;i<list.length;i++) {
+  console.log(Math.floor(list[i]/4)+','+list[i]%4)
+    this.grid.insertTile(new Tile({x:Math.floor(list[i]/4),y:list[i]%4}, i+1));
   }
 };
 
 // Adds a tile in a random position
 GameManager.prototype.addRandomTile = function () {
   if (this.grid.cellsAvailable()) {
-    var value = Math.random() < 0.9 ? 2 : 4;
+    //var value = Math.random() < 0.9 ? 2 : 4;
+    //console.log('dso');
+    var value = Math.random() < 0.9 ? 1 : 3;
     var tile = new Tile(this.grid.randomAvailableCell(), value);
 
     this.grid.insertTile(tile);
@@ -77,13 +109,16 @@ GameManager.prototype.addRandomTile = function () {
 
 // Sends the updated grid to the actuator
 GameManager.prototype.actuate = function () {
+  
+  /*this.bestscore = this.storageManager.getBestScore();
   if (this.storageManager.getBestScore() < this.score) {
     this.storageManager.setBestScore(this.score);
-  }
+  }*/
 
   // Clear the state when the game is over (game over only, not win)
   if (this.over) {
     this.storageManager.clearGameState();
+    console.log('clear gamestate')
   } else {
     this.storageManager.setGameState(this.serialize());
   }
@@ -92,7 +127,7 @@ GameManager.prototype.actuate = function () {
     score:      this.score,
     over:       this.over,
     won:        this.won,
-    bestScore:  this.storageManager.getBestScore(),
+    bestScore:  this.bestscore.moves,
     terminated: this.isGameTerminated()
   });
 
@@ -113,7 +148,8 @@ GameManager.prototype.serialize = function () {
 GameManager.prototype.prepareTiles = function () {
   this.grid.eachCell(function (x, y, tile) {
     if (tile) {
-      tile.mergedFrom = null;
+      //tile.mergedFrom = null;
+      tile.swappedFrom = null
       tile.savePosition();
     }
   });
@@ -131,22 +167,27 @@ GameManager.prototype.move = function (direction) {
   // 0: up, 1: right, 2: down, 3: left
   var self = this;
 
+
   if (this.isGameTerminated()) return; // Don't do anything if the game's over
+  console.log("moving")
 
   var cell, tile;
 
   var vector     = this.getVector(direction);
-  var traversals = this.buildTraversals(vector);
+//  var traversals = this.buildTraversals(vector);
   var moved      = false;
 
-  // Save the current tile positions and remove merger information
+  // Save the current tile positions and remove swap information
   this.prepareTiles();
 
+/*
   // Traverse the grid in the right direction and move tiles
   traversals.x.forEach(function (x) {
     traversals.y.forEach(function (y) {
       cell = { x: x, y: y };
       tile = self.grid.cellContent(cell);
+
+
 
       if (tile) {
         var positions = self.findFarthestPosition(cell, vector);
@@ -185,9 +226,75 @@ GameManager.prototype.move = function (direction) {
     if (!this.movesAvailable()) {
       this.over = true; // Game over!
     }
+*/
+
+//find if next position is correct , if yes swaptilepositions, update score , update bestscore , 
+    
+
+    console.log("Getting to tile")
+    var cell = this.grid.FindEmptyCell();
+    console.log('cell :: '+cell.x+','+cell.y)
+
+    var nextpos = this.findNextPosition(cell, vector);
+    console.log('next pos ::: '+nextpos.next.x+','+nextpos.next.y)
+    console.log('cell pos ::: '+cell.x+','+cell.y)
+
+    if (nextpos.next.x == cell.x && nextpos.next.y == cell.y ) {
+        console.log('Cant move')
+        return;
+    }
+    
+    var tile = self.grid.cellContent(nextpos.next);
+    var value = tile.value;
+    console.log('value' + value)
+    this.grid.swapcells(nextpos.next,cell)
+    this.grid.removeTile(tile)
+    this.grid.insertTile(new Tile({x:cell.x,y:cell.y},value));
+
+    this.updatescore();
+    this.update
+
+    if(this.goalreached() == true) {
+      console.log('goalreached')
+        this.over = true;
+        this.won = true;
+        
+    }
+   
 
     this.actuate();
-  }
+    console.log('-------------DONE --------------------------')
+  
+};
+GameManager.prototype.updatescore = function(){
+  //Number of correct guys 
+  //Number of moves 
+  this.score = 0;
+
+  for(var i=0;i<4;i++)
+    for(var j=0;j<4;j++)
+      if(this.grid.cells[i][j] == null) {
+        continue;
+      } else {
+        if(this.grid.cells[i][j].value == (4*i+j+1)){
+          this.score += 1;
+          console.log('score ::: '+this.score)
+          }
+        
+      }
+
+      this.bestscore.moves = this.bestscore.value>this.score ?this.bestscore.moves:this.movecount;
+      this.bestscore.value = this.bestscore.value>this.score ?this.bestscore.value:this.score;
+
+
+};
+
+GameManager.prototype.goalreached = function (){
+  if (this.score == 15)
+    return true;
+  return false;
+
+
 };
 
 // Get the vector representing the chosen direction
@@ -203,6 +310,8 @@ GameManager.prototype.getVector = function (direction) {
   return map[direction];
 };
 
+
+
 // Build a list of positions to traverse in the right order
 GameManager.prototype.buildTraversals = function (vector) {
   var traversals = { x: [], y: [] };
@@ -217,6 +326,23 @@ GameManager.prototype.buildTraversals = function (vector) {
   if (vector.y === 1) traversals.y = traversals.y.reverse();
 
   return traversals;
+};
+GameManager.prototype.findNextPosition = function (cell, vector) {
+  var previousemptycell,newemptycell;
+  //find the nearest nieighbour
+  previousemptycell = cell;
+  newemptycell = {x:0,y:0};
+  console.log('previousemptycell :: '+previousemptycell.x+', '+previousemptycell.y);
+  
+  
+  if(((previousemptycell.x-vector.x)<4) && (previousemptycell.y-vector.y)<4 && (previousemptycell.x-vector.x)>=0 && (previousemptycell.y-vector.y)>=0){
+    newemptycell.x = previousemptycell.x-vector.x;
+    newemptycell.y = previousemptycell.y-vector.y;
+
+    return {next:newemptycell};
+  }
+  return {next:previousemptycell};
+
 };
 
 GameManager.prototype.findFarthestPosition = function (cell, vector) {

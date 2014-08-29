@@ -1,7 +1,25 @@
-function Grid(size, previousState) {
+function Grid(size, previousState,emptytilepos) {
   this.size = size;
+  this.sizex = 4;
+  this.sizey = 4;
   this.cells = previousState ? this.fromState(previousState) : this.empty();
+  
 }
+
+Grid.prototype.FindEmptyCell = function(){
+  var s = 0;
+  
+  for(var i=0;i<4;i++)
+    for(var j=0;j<4;j++)
+      if(this.cells[i][j] == null){
+        console.log('empty cell ::: '+i+','+j);
+        return {x:i,y:j};
+      }
+ 
+  
+  //console.log(s)
+
+};
 
 // Build a grid of the specified size
 Grid.prototype.empty = function () {
@@ -33,6 +51,17 @@ Grid.prototype.fromState = function (state) {
   return cells;
 };
 
+
+Grid.prototype.GetThisCell = function (i) {
+console.log('Get this Cell');
+//var cell = {x:Math.floor(i/4),y:i%4};
+var c = [];
+c.push({x:Math.floor(i/4),y:i%4}); 
+return c[0];
+//return cell;
+
+}
+
 // Find the first available random position
 Grid.prototype.randomAvailableCell = function () {
   var cells = this.availableCells();
@@ -63,6 +92,13 @@ Grid.prototype.eachCell = function (callback) {
   }
 };
 
+Grid.prototype.swapcells = function(src,dest){
+  var tile = this.cells[src.x][src.y];
+  this.cells[dest.x][dest.y] = tile;
+  this.cells[src.x][src.y] = null;
+
+}
+
 // Check if there are any cells available
 Grid.prototype.cellsAvailable = function () {
   return !!this.availableCells().length;
@@ -88,6 +124,7 @@ Grid.prototype.cellContent = function (cell) {
 // Inserts a tile at its position
 Grid.prototype.insertTile = function (tile) {
   this.cells[tile.x][tile.y] = tile;
+
 };
 
 Grid.prototype.removeTile = function (tile) {
