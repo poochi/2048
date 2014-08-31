@@ -6,14 +6,13 @@ function GameManager(size, InputManager, Actuator, StorageManager) {
 
   this.startTiles     = 15;
 
-  this.bestscore = {moves:0,value:0}
 
   this.inputManager.on("move", this.move.bind(this));
   this.inputManager.on("restart", this.restart.bind(this));
   this.inputManager.on("keepPlaying", this.keepPlaying.bind(this));
 
 
-
+  console.log('sdfojsdf')
   this.setup();
 }
 
@@ -21,9 +20,26 @@ function GameManager(size, InputManager, Actuator, StorageManager) {
 GameManager.prototype.restart = function () {
   
   this.actuator.continueGame(); // Clear the game won/lost message
-  this.setup();
+  //this.setup();
+  this.startnewgame();
 };
 
+GameManager.prototype.startnewgame = function (){
+    console.log('NewGame')
+    this.grid        = new Grid(this.size);
+    this.score       = 0;
+    this.movecount = 0;
+    this.over        = false;
+    this.won         = false;
+    this.keepPlaying = false;
+
+
+    // Add the initial tiles
+    this.addStartTiles();
+     // Update the actuator
+    this.actuate();
+  
+}
 // Keep playing after winning (allows going over 2048)
 GameManager.prototype.keepPlaying = function () {
   this.keepPlaying = true;
@@ -32,12 +48,19 @@ GameManager.prototype.keepPlaying = function () {
 
 // Return true if the game is lost, or has won and the user hasn't kept playing
 GameManager.prototype.isGameTerminated = function () {
-  return this.over || (this.won && !this.keepPlaying);
+  var v = this.over || (this.won && !this.keepPlaying);
+  console.log(v);
+  return v;
 };
 
 // Set up the game
 GameManager.prototype.setup = function () {
   var previousState = this.storageManager.getGameState();
+
+  var json = this.storageManager.getBestScore();
+  this.bestscore = json ? json:{moves:0,value:0};
+  this.movecount = 0;
+
 
   // Reload the game from a previous game if present
   if (previousState) {
@@ -48,6 +71,7 @@ GameManager.prototype.setup = function () {
     this.won         = previousState.won;
     this.keepPlaying = previousState.keepPlaying;
   } else {
+    console.log("LolF")
     this.grid        = new Grid(this.size);
     this.score       = 0;
     this.over        = false;
@@ -65,9 +89,10 @@ GameManager.prototype.setup = function () {
 
 // Set up the initial tiles to start the game with
 GameManager.prototype.addStartTiles = function () {
+  console.log("add start tiles ")
 var newlist = new Array(15);
 for (var i=0;i<15;i++)
-    newlist[i]= ((i+7)%15 + 1);
+    newlist[i]= (i);
 
 
 console.log('addStartTiles');
@@ -171,6 +196,7 @@ GameManager.prototype.move = function (direction) {
   if (this.isGameTerminated()) return; // Don't do anything if the game's over
   console.log("moving")
 
+
   var cell, tile;
 
   var vector     = this.getVector(direction);
@@ -251,12 +277,13 @@ GameManager.prototype.move = function (direction) {
     this.grid.removeTile(tile)
     this.grid.insertTile(new Tile({x:cell.x,y:cell.y},value));
 
+
     this.updatescore();
-    this.update
+    
 
     if(this.goalreached() == true) {
       console.log('goalreached')
-        this.over = true;
+        //this.over = true;
         this.won = true;
         
     }
@@ -270,6 +297,7 @@ GameManager.prototype.updatescore = function(){
   //Number of correct guys 
   //Number of moves 
   this.score = 0;
+  this.movecount+=1;
 
   for(var i=0;i<4;i++)
     for(var j=0;j<4;j++)
@@ -285,6 +313,8 @@ GameManager.prototype.updatescore = function(){
 
       this.bestscore.moves = this.bestscore.value>this.score ?this.bestscore.moves:this.movecount;
       this.bestscore.value = this.bestscore.value>this.score ?this.bestscore.value:this.score;
+      console.log("Best :: "+this.bestscore.moves)
+      console.log("Best :: "+this.bestscore.value)
 
 
 };

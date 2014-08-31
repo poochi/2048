@@ -4,6 +4,7 @@ function Grid(size, previousState,emptytilepos) {
   this.sizey = 4;
   this.cells = previousState ? this.fromState(previousState) : this.empty();
   
+  
 }
 
 Grid.prototype.FindEmptyCell = function(){
@@ -38,6 +39,12 @@ Grid.prototype.empty = function () {
 
 Grid.prototype.fromState = function (state) {
   var cells = [];
+/*  for(var i=0;i<4;i++)
+    for(var j=0;j<4;j++) {
+      var tile = state[i][j];
+      cells[i][j] = (tile ? new Tile(tile.position, tile.value) : null);
+  }
+*/
 
   for (var x = 0; x < this.size; x++) {
     var row = cells[x] = [];
@@ -47,6 +54,7 @@ Grid.prototype.fromState = function (state) {
       row.push(tile ? new Tile(tile.position, tile.value) : null);
     }
   }
+
 
   return cells;
 };
@@ -146,7 +154,11 @@ Grid.prototype.serialize = function () {
       row.push(this.cells[x][y] ? this.cells[x][y].serialize() : null);
     }
   }
-
+  
+  /*for (var i=0;i<4;i++)
+    for(var j=0; j<4;j++)
+      cellstate[i][j] = this.cells[i][j].serialize();
+*/
   return {
     size: this.size,
     cells: cellState
