@@ -12,6 +12,14 @@ awesome styling btw , i loved it  :)
 
 A fork from 2048 s repo . 
 
+Todo
+setup google server
+upload valid puzzle
+retrive valid puzzle
+Design scoring system
+Online leader board
+New-relic 
+google analytics
 
 ## License
 Lloyd's 15 is licensed under the [MIT license.](https://github.com/gabrielecirulli/2048/blob/master/LICENSE.txt)
