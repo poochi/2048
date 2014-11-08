@@ -1,4 +1,4 @@
-#Lloyd's 15 
+#15 Tile puzzle
 
 A 15 tile sliding puzzle  that consists of a frame of numbered square tiles in random order with one tile missing.
 he object of the puzzle is to place the tiles in row-wise order making sliding moves that use the empty space.
@@ -22,5 +22,5 @@ New-relic
 google analytics
 
 ## License
-Lloyd's 15 is licensed under the [MIT license.](https://github.com/gabrielecirulli/2048/blob/master/LICENSE.txt)
+This puzzle is licensed under the [MIT license]
 

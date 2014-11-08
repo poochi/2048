@@ -3,14 +3,15 @@ function GameManager(size, InputManager, Actuator, StorageManager) {
   this.inputManager   = new InputManager;
   this.storageManager = new StorageManager;
   this.actuator       = new Actuator;
+  //helper object
+  this.helper = new Helper;
 
   this.startTiles     = 15;
 
 
   this.inputManager.on("move", this.move.bind(this));
   this.inputManager.on("restart", this.restart.bind(this));
-  this.inputManager.on("keepPlaying", this.keepPlaying.bind(this));
-
+  //this.inputManager.on("keepPlaying", this.keepPlaying.bind(this));
 
   console.log('sdfojsdf')
   this.setup();
@@ -25,14 +26,16 @@ GameManager.prototype.restart = function () {
 };
 
 GameManager.prototype.startnewgame = function (){
-    console.log('NewGame')
+  console.log('Newgame')
     this.grid        = new Grid(this.size);
-    this.score       = 0;
+    this.score       = {
+  'moves': 0, 'value': 0,
+  
+};
     this.movecount = 0;
     this.over        = false;
     this.won         = false;
     this.keepPlaying = false;
-
 
     // Add the initial tiles
     this.addStartTiles();
@@ -55,15 +58,21 @@ GameManager.prototype.isGameTerminated = function () {
 
 // Set up the game
 GameManager.prototype.setup = function () {
+  //this.storageManager.clearGameState();
+  //with the page number as a parameter dataType: "html", //expect html to be returned success: function(msg){
+
   var previousState = this.storageManager.getGameState();
+  
 
   var json = this.storageManager.getBestScore();
   this.bestscore = json ? json:{moves:0,value:0};
   this.movecount = 0;
+  console.log('this.bestscore :: '+this.bestscore.moves)
 
 
   // Reload the game from a previous game if present
   if (previousState) {
+    console.log('From previous state')
     this.grid        = new Grid(previousState.grid.size,
                                 previousState.grid.cells); // Reload grid
     this.score       = previousState.score;
@@ -72,8 +81,9 @@ GameManager.prototype.setup = function () {
     this.keepPlaying = previousState.keepPlaying;
   } else {
     console.log("LolF")
+
     this.grid        = new Grid(this.size);
-    this.score       = 0;
+    this.score       = {'value':0,'moves':0};
     this.over        = false;
     this.won         = false;
     this.keepPlaying = false;
@@ -82,49 +92,38 @@ GameManager.prototype.setup = function () {
     this.addStartTiles();
   }
 
+  this.score.moves -=1;
+  this.updatescore();
 
   // Update the actuator
   this.actuate();
 };
 
+
 // Set up the initial tiles to start the game with
 GameManager.prototype.addStartTiles = function () {
-  console.log("add start tiles ")
+console.log("add start tiles ")
+
+
+
 var newlist = new Array(15);
-for (var i=0;i<15;i++)
-    newlist[i]= (i);
-
-
-console.log('addStartTiles');
-/*
-    for (var i=0;i<15;i++) {
-	var swpind= i + (Math.floor((Math.random()*(15-i))))%(15-i+1);
-	var x = newlist[swpind];
-	newlist[swpind] =newlist[0];
-        newlist[0] = x ;
-	//console.log(swpind);    
-    }
-  */
-    this.addtilelist(newlist);
-/*
-for(var i=0;i<newlist.length;i++)
-	console.log(newlist[i])
-*/
-  
+newlist  = this.helper.generateQuestion(newlist);
+   this.addtilelist(newlist);
+ 
 };
 
 GameManager.prototype.addtilelist = function(list) {
 for (var i=0;i<list.length;i++) {
-  console.log(Math.floor(list[i]/4)+','+list[i]%4)
-    this.grid.insertTile(new Tile({x:Math.floor(list[i]/4),y:list[i]%4}, i+1));
+     if(list[i] != -1) {
+      console.log(Math.floor(i/4)+','+i%4+' '+list[i])
+      this.grid.insertTile(new Tile({x:Math.floor(i/4),y:i%4}, list[i]+1));
+      }
   }
 };
 
 // Adds a tile in a random position
 GameManager.prototype.addRandomTile = function () {
   if (this.grid.cellsAvailable()) {
-    //var value = Math.random() < 0.9 ? 2 : 4;
-    //console.log('dso');
     var value = Math.random() < 0.9 ? 1 : 3;
     var tile = new Tile(this.grid.randomAvailableCell(), value);
 
@@ -135,10 +134,6 @@ GameManager.prototype.addRandomTile = function () {
 // Sends the updated grid to the actuator
 GameManager.prototype.actuate = function () {
   
-  /*this.bestscore = this.storageManager.getBestScore();
-  if (this.storageManager.getBestScore() < this.score) {
-    this.storageManager.setBestScore(this.score);
-  }*/
 
   // Clear the state when the game is over (game over only, not win)
   if (this.over) {
@@ -152,7 +147,7 @@ GameManager.prototype.actuate = function () {
     score:      this.score,
     over:       this.over,
     won:        this.won,
-    bestScore:  this.bestscore.moves,
+    bestScore:  this.bestscore,
     terminated: this.isGameTerminated()
   });
 
@@ -191,8 +186,6 @@ GameManager.prototype.moveTile = function (tile, cell) {
 GameManager.prototype.move = function (direction) {
   // 0: up, 1: right, 2: down, 3: left
   var self = this;
-
-
   if (this.isGameTerminated()) return; // Don't do anything if the game's over
   console.log("moving")
 
@@ -206,56 +199,7 @@ GameManager.prototype.move = function (direction) {
   // Save the current tile positions and remove swap information
   this.prepareTiles();
 
-/*
-  // Traverse the grid in the right direction and move tiles
-  traversals.x.forEach(function (x) {
-    traversals.y.forEach(function (y) {
-      cell = { x: x, y: y };
-      tile = self.grid.cellContent(cell);
-
-
-
-      if (tile) {
-        var positions = self.findFarthestPosition(cell, vector);
-        var next      = self.grid.cellContent(positions.next);
-
-        // Only one merger per row traversal?
-        if (next && next.value === tile.value && !next.mergedFrom) {
-          var merged = new Tile(positions.next, tile.value * 2);
-          merged.mergedFrom = [tile, next];
-
-          self.grid.insertTile(merged);
-          self.grid.removeTile(tile);
-
-          // Converge the two tiles' positions
-          tile.updatePosition(positions.next);
-
-          // Update the score
-          self.score += merged.value;
-
-          // The mighty 2048 tile
-          if (merged.value === 2048) self.won = true;
-        } else {
-          self.moveTile(tile, positions.farthest);
-        }
-
-        if (!self.positionsEqual(cell, tile)) {
-          moved = true; // The tile moved from its original cell!
-        }
-      }
-    });
-  });
-
-  if (moved) {
-    this.addRandomTile();
-
-    if (!this.movesAvailable()) {
-      this.over = true; // Game over!
-    }
-*/
-
-//find if next position is correct , if yes swaptilepositions, update score , update bestscore , 
-    
+   
 
     console.log("Getting to tile")
     var cell = this.grid.FindEmptyCell();
@@ -283,7 +227,6 @@ GameManager.prototype.move = function (direction) {
 
     if(this.goalreached() == true) {
       console.log('goalreached')
-        //this.over = true;
         this.won = true;
         
     }
@@ -296,8 +239,10 @@ GameManager.prototype.move = function (direction) {
 GameManager.prototype.updatescore = function(){
   //Number of correct guys 
   //Number of moves 
-  this.score = 0;
-  this.movecount+=1;
+  this.score.value = 0;
+  this.score.moves +=1;
+  console.log('Updating score')
+  
 
   for(var i=0;i<4;i++)
     for(var j=0;j<4;j++)
@@ -305,14 +250,14 @@ GameManager.prototype.updatescore = function(){
         continue;
       } else {
         if(this.grid.cells[i][j].value == (4*i+j+1)){
-          this.score += 1;
-          console.log('score ::: '+this.score)
+          this.score.value += 1;
+          console.log('score ::: '+this.score.moves+','+this.score.value)
           }
         
       }
 
-      this.bestscore.moves = this.bestscore.value>this.score ?this.bestscore.moves:this.movecount;
-      this.bestscore.value = this.bestscore.value>this.score ?this.bestscore.value:this.score;
+      this.bestscore.moves = this.bestscore.value>this.score.value ?this.bestscore.moves:this.score.moves;
+      this.bestscore.value = this.bestscore.value>this.score.value ?this.bestscore.value:this.score.value;
       console.log("Best :: "+this.bestscore.moves)
       console.log("Best :: "+this.bestscore.value)
 
@@ -320,7 +265,7 @@ GameManager.prototype.updatescore = function(){
 };
 
 GameManager.prototype.goalreached = function (){
-  if (this.score == 15)
+  if (this.score.value == 15)
     return true;
   return false;
 
