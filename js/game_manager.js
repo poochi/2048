@@ -11,9 +11,7 @@ function GameManager(size, InputManager, Actuator, StorageManager) {
 
   this.inputManager.on("move", this.move.bind(this));
   this.inputManager.on("restart", this.restart.bind(this));
-  //this.inputManager.on("keepPlaying", this.keepPlaying.bind(this));
-
-  console.log('sdfojsdf')
+  
   this.setup();
 }
 
@@ -21,7 +19,7 @@ function GameManager(size, InputManager, Actuator, StorageManager) {
 GameManager.prototype.restart = function () {
   
   this.actuator.continueGame(); // Clear the game won/lost message
-  //this.setup();
+  
   this.startnewgame();
 };
 
@@ -29,8 +27,7 @@ GameManager.prototype.startnewgame = function (){
   console.log('Newgame')
     this.grid        = new Grid(this.size);
     this.score       = {
-  'moves': 0, 'value': 0,
-  
+  'rating': 100, 'points': 100  
 };
     this.movecount = 0;
     this.over        = false;
@@ -45,13 +42,14 @@ GameManager.prototype.startnewgame = function (){
 }
 // Keep playing after winning (allows going over 2048)
 GameManager.prototype.keepPlaying = function () {
+  console.log("Should not come here");
   this.keepPlaying = true;
   this.actuator.continueGame(); // Clear the game won/lost message
 };
 
 // Return true if the game is lost, or has won and the user hasn't kept playing
 GameManager.prototype.isGameTerminated = function () {
-  var v = this.over || (this.won && !this.keepPlaying);
+  var v = this.over || this.won;
   console.log(v);
   return v;
 };
@@ -65,9 +63,9 @@ GameManager.prototype.setup = function () {
   
 
   var json = this.storageManager.getBestScore();
-  this.bestscore = json ? json:{moves:0,value:0};
+  this.bestscore = json ? json:{rating:0,points:0};
   this.movecount = 0;
-  console.log('this.bestscore :: '+this.bestscore.moves)
+//  console.log('this.bestscore :: '+this.bestscore.points)
 
 
   // Reload the game from a previous game if present
@@ -78,12 +76,12 @@ GameManager.prototype.setup = function () {
     this.score       = previousState.score;
     this.over        = previousState.over;
     this.won         = previousState.won;
-    this.keepPlaying = previousState.keepPlaying;
+	this.keepPlaying = false;
   } else {
-    console.log("LolF")
+    console.log("No previous state")
 
     this.grid        = new Grid(this.size);
-    this.score       = {'value':0,'moves':0};
+    this.score       = {'rating':10,'points':0};
     this.over        = false;
     this.won         = false;
     this.keepPlaying = false;
@@ -92,7 +90,8 @@ GameManager.prototype.setup = function () {
     this.addStartTiles();
   }
 
-  this.score.moves -=1;
+  this.score.points = this.helper.getpoints(this.score.rating);
+  this.actuator.setscore(this.score);
   this.updatescore();
 
   // Update the actuator
@@ -223,52 +222,31 @@ GameManager.prototype.move = function (direction) {
 
 
     this.updatescore();
-    
-
-    if(this.goalreached() == true) {
-      console.log('goalreached')
-        this.won = true;
-        
-    }
-   
-
+  
     this.actuate();
     console.log('-------------DONE --------------------------')
   
 };
 GameManager.prototype.updatescore = function(){
-  //Number of correct guys 
-  //Number of moves 
-  this.score.value = 0;
-  this.score.moves +=1;
+  
+  this.score.points -=1;
   console.log('Updating score')
   
-
+   var value = 0;
   for(var i=0;i<4;i++)
     for(var j=0;j<4;j++)
       if(this.grid.cells[i][j] == null) {
         continue;
       } else {
         if(this.grid.cells[i][j].value == (4*i+j+1)){
-          this.score.value += 1;
-          console.log('score ::: '+this.score.moves+','+this.score.value)
+          value += 1;
+          
           }
         
       }
-
-      this.bestscore.moves = this.bestscore.value>this.score.value ?this.bestscore.moves:this.score.moves;
-      this.bestscore.value = this.bestscore.value>this.score.value ?this.bestscore.value:this.score.value;
-      console.log("Best :: "+this.bestscore.moves)
-      console.log("Best :: "+this.bestscore.value)
-
-
-};
-
-GameManager.prototype.goalreached = function (){
-  if (this.score.value == 15)
-    return true;
-  return false;
-
+	  if (value == 15)
+		this.won = true;
+//Record best rating after a match only !      
 
 };
 

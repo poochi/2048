@@ -19,10 +19,9 @@ window.fakeStorage = {
 };
 
 function LocalStorageManager() {
-  //this.bestScoreKey     = "bestScore";
-  this.gameStateKey     = "gameStateLloyd";
-  //this.bestMovesKey     ="bestMoves";
+  this.gameStateKey     = "gamestatepuzzle";
   this.bestKey          ="best";
+  this.ratingKey = 		"rating";
 
   var supported = this.localStorageSupported();
   this.storage = supported ? window.localStorage : window.fakeStorage;
@@ -40,8 +39,6 @@ LocalStorageManager.prototype.localStorageSupported = function () {
     return false;
   }
 };
-
-
 
 LocalStorageManager.prototype.getBestScore = function () {
   var scoreJSON = this.storage.getItem(this.bestKey);

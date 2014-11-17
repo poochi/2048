@@ -1,8 +1,16 @@
 //Helper class that manages question retrival/ generation
 function Helper() {
  //does nothing for now
-
+this.emptytile_locations = [];
   
+}
+
+Helper.prototype.getpoints = function (rating) {
+//to do calculate minimum moves required logic
+
+//for now 
+console.log(this.emptytile_locations.length);
+return rating*this.emptytile_locations.length;
 }
 
 bound = function (r,c){
@@ -26,6 +34,7 @@ console.log(i);
 console.log('-----------------------ST--------------');
 for(var depth=0;depth<difficulty[1];depth++) {
 	var v = Math.random();
+	this.emptytile_locations.push(i);
 
 
 	if (v<0.25 && bound(Math.floor(i/4+1),i%4)) {
@@ -58,6 +67,7 @@ for(var depth=0;depth<difficulty[1];depth++) {
 	
 
 }
+this.emptytile_locations.push(i);
 
 for (var i=0;i<=15;i++)
 	console.log(newlist[i]);

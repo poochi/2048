@@ -4,7 +4,12 @@ function HTMLActuator() {
   this.bestContainer    = document.querySelector(".best-container");
   this.messageContainer = document.querySelector(".game-message");
 
-  this.score = 0;
+  this.score = {'rating':0,'points':8};
+}
+
+HTMLActuator.prototype.setscore = function (score) {
+this.score.points = score.points;
+this.score.rating = score.rating;
 }
 
 HTMLActuator.prototype.actuate = function (grid, metadata) {
@@ -22,7 +27,8 @@ HTMLActuator.prototype.actuate = function (grid, metadata) {
     });
 
     self.updateScore(metadata.score);
-    self.updateBestScore(metadata.bestScore);
+	self.updateRating(metadata.score.rating);
+    //self.updateBestScore(metadata.bestScore);
     
     if (metadata.terminated) {
       if (metadata.over) {
@@ -45,6 +51,8 @@ HTMLActuator.prototype.clearContainer = function (container) {
     container.removeChild(container.firstChild);
   }
 };
+
+
 
 HTMLActuator.prototype.addTile = function (tile) {
   var self = this;
@@ -111,23 +119,26 @@ HTMLActuator.prototype.positionClass = function (position) {
 HTMLActuator.prototype.updateScore = function (score) {
   this.clearContainer(this.scoreContainer);
 
-  var difference = score.value - this.score.value;
+  var difference = score.points - this.score.points;
   this.score = score;
 
-  this.scoreContainer.textContent = this.score.value+'/'+this.score.moves;
+  this.scoreContainer.textContent = this.score.points;
+  var addition = document.createElement("div");
+  addition.classList.add("score-addition");
+	/*if (difference < 0)
+		addition.textContent = "-" + -difference;
+	else
+		addition.textContent = "+" + difference;
 
-  if (difference > 0) {
-    var addition = document.createElement("div");
-    addition.classList.add("score-addition");
-    addition.textContent = "+" + difference;
-
-    this.scoreContainer.appendChild(addition);
-  }
+  this.scoreContainer.appendChild(addition);*/
+  
 };
 
-HTMLActuator.prototype.updateBestScore = function (bestScore) {
-  this.bestContainer.textContent = bestScore.value+'/'+bestScore.moves;
+HTMLActuator.prototype.updateRating = function (rating) {
+  this.bestContainer.textContent = rating;
 };
+
+
 
 HTMLActuator.prototype.message = function (won) {
   var type    = won ? "game-won" : "game-over";
